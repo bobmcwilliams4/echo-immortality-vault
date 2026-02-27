@@ -1,0 +1,27 @@
+name = "echo-immortality-vault"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "echo-immortality-vault"
+database_id = "c04573eb-9dba-48ca-a92a-6e71b7df3b49"
+
+[vars]
+AI_ORCHESTRATOR_URL = "https://echo-ai-orchestrator.bmcii1976.workers.dev"
+SHARED_BRAIN_URL = "https://echo-shared-brain.bmcii1976.workers.dev"
+ECHO_CHAT_URL = "https://echo-chat.bmcii1976.workers.dev"
+
+# Service bindings — Workers on same account MUST use these (not public URL fetch)
+[[services]]
+binding = "AI_ORCHESTRATOR"
+service = "echo-ai-orchestrator"
+
+[[services]]
+binding = "SHARED_BRAIN"
+service = "echo-shared-brain"
+
+[[services]]
+binding = "ECHO_CHAT"
+service = "echo-chat"
