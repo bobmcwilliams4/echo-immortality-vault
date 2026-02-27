@@ -181,12 +181,21 @@ interview.post('/questions/select', async (c) => {
   // Sort: priority ascending (1 first), then shuffle within priority
   pool.sort((a, b) => a.priority - b.priority + (Math.random() - 0.5) * 0.5);
 
-  const selected = pool.slice(0, count);
+  const selected = pool.slice(0, count).map((q) => ({
+    ...q,
+    video_instructions: {
+      required: false,
+      recommended: true,
+      camera: 'front',
+      guidance: 'Record your answer using the selfie camera. Center your face, ensure good lighting, and speak naturally. Your facial expressions, mannerisms, and lip movements are captured for future ultra-realistic FaceTime calling.',
+      biometric_captures: ['face_mesh', 'emotion', 'lip_sync', 'mannerism', 'body_pose'],
+    },
+  }));
   return c.json({ questions: selected, session_type: sessionType, total_available: pool.length });
 });
 
 interview.post('/questions/answer', async (c) => {
-  const body = await c.req.json<InterviewAnswerRequest>();
+  const body = await c.req.json<InterviewAnswerRequest & { video_id?: string }>();
   if (!body.user_id || !body.question || !body.answer) {
     return c.json({ error: 'user_id, question, and answer required' }, 400);
   }
@@ -196,8 +205,8 @@ interview.post('/questions/answer', async (c) => {
   const emotion = body.emotion ?? await detectEmotion(c.env, body.answer);
 
   await db
-    .prepare('INSERT INTO interviews (id, user_id, question_id, question, answer, emotion, category, session_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, body.user_id, body.question_id ?? hashQ(body.question), body.question, body.answer, emotion, body.category ?? null, body.session_type ?? null)
+    .prepare('INSERT INTO interviews (id, user_id, question_id, question, answer, emotion, category, session_type, video_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, body.user_id, body.question_id ?? hashQ(body.question), body.question, body.answer, emotion, body.category ?? null, body.session_type ?? null, body.video_id ?? null)
     .run();
 
   // Store answer as memory in Shared Brain

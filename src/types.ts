@@ -8,6 +8,7 @@ export interface Env {
   ELEVENLABS_API_KEY: string;
   CARTESIA_API_KEY: string;
   ECHO_API_KEY: string;
+  MEDIA_BUCKET: R2Bucket;
   // Service bindings (Workers on same account)
   AI_ORCHESTRATOR: Fetcher;
   SHARED_BRAIN: Fetcher;
@@ -153,6 +154,60 @@ export interface InterviewAnswerRequest {
   category?: string;
   emotion?: string;
   session_type?: string;
+}
+
+// ─── Video / Biometric ─────────────────────────────────────────────────
+
+export interface VideoRecording {
+  id: string;
+  user_id: string;
+  interview_id?: string;
+  question_id?: string;
+  r2_key: string;
+  duration_seconds?: number;
+  file_size?: number;
+  mime_type: string;
+  camera_facing: string;
+  biometric_status: string;
+  transcription?: string;
+  created_at: string;
+}
+
+export interface BiometricCapture {
+  id: string;
+  user_id: string;
+  video_id: string;
+  capture_type: 'face_mesh' | 'emotion' | 'lip_sync' | 'mannerism' | 'body_pose';
+  data_json: string;
+  confidence: number;
+  frame_start?: number;
+  frame_end?: number;
+  created_at: string;
+}
+
+export interface VideoUploadRequest {
+  user_id: string;
+  interview_id?: string;
+  question_id?: string;
+  duration_seconds?: number;
+  camera_facing?: string;
+  transcription?: string;
+}
+
+export interface FaceTimeReadiness {
+  user_id: string;
+  ready: boolean;
+  score: number;
+  requirements: {
+    videos_recorded: number;
+    videos_needed: number;
+    face_mesh_captures: number;
+    lip_sync_captures: number;
+    emotion_captures: number;
+    mannerism_captures: number;
+    body_pose_captures: number;
+  };
+  missing: string[];
 }
 
 export interface VoiceSynthRequest {

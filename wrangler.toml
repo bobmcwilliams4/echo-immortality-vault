@@ -25,3 +25,7 @@ service = "echo-shared-brain"
 [[services]]
 binding = "ECHO_CHAT"
 service = "echo-chat"
+
+[[r2_buckets]]
+bucket_name = "immortality-vault-media"
+binding = "MEDIA_BUCKET"

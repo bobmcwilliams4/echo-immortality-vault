@@ -19,6 +19,7 @@ import interview from './routes/interview';
 import family from './routes/family';
 import voice from './routes/voice';
 import gamification from './routes/gamification';
+import videoRoutes from './routes/video';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -56,6 +57,7 @@ app.route('/interview', interview);     // /interview/questions/*, /interview/in
 app.route('/family', family);           // /family/:vaultUserId, CRUD
 app.route('/voice', voice);             // /voice/synthesize, /voice/profiles, /voice/clone-status
 app.route('/gamification', gamification); // /gamification/stats/:userId, /gamification/check/:userId
+app.route('/video', videoRoutes);         // /video/upload, /video/stream/:id, /video/facetime-readiness/:userId
 
 // ─── User management ────────────────────────────────────────────────────
 
@@ -128,13 +130,30 @@ app.post('/init-schema', async (c) => {
     `CREATE INDEX IF NOT EXISTS idx_family_vault ON family_members(vault_user_id)`,
     `CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id)`,
     `CREATE INDEX IF NOT EXISTS idx_chat_user ON chat_sessions(user_id)`,
+    // Video + Biometric tables
+    `CREATE TABLE IF NOT EXISTS video_recordings (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, interview_id TEXT, question_id TEXT, r2_key TEXT NOT NULL, duration_seconds REAL, file_size INTEGER, mime_type TEXT DEFAULT 'video/mp4', camera_facing TEXT DEFAULT 'front', biometric_status TEXT DEFAULT 'pending', transcription TEXT, created_at TEXT DEFAULT (datetime('now')))`,
+    `CREATE TABLE IF NOT EXISTS biometric_captures (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, video_id TEXT NOT NULL, capture_type TEXT NOT NULL, data_json TEXT NOT NULL, confidence REAL DEFAULT 0, frame_start INTEGER, frame_end INTEGER, created_at TEXT DEFAULT (datetime('now')))`,
+    `CREATE INDEX IF NOT EXISTS idx_video_user ON video_recordings(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_video_interview ON video_recordings(interview_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_biometric_video ON biometric_captures(video_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_biometric_user ON biometric_captures(user_id)`,
+    // Add video_id column to interviews (safe — no-op if already exists)
+    `ALTER TABLE interviews ADD COLUMN video_id TEXT`,
   ];
 
+  const errors: string[] = [];
   for (const sql of statements) {
-    await db.prepare(sql).run();
+    try {
+      await db.prepare(sql).run();
+    } catch (e: any) {
+      // ALTER TABLE fails if column already exists — safe to ignore
+      if (!sql.startsWith('ALTER') || !e.message?.includes('duplicate')) {
+        errors.push(e.message ?? String(e));
+      }
+    }
   }
 
-  return c.json({ initialized: true, tables: 7, indexes: 5 });
+  return c.json({ initialized: true, tables: 9, indexes: 9, errors: errors.length > 0 ? errors : undefined });
 });
 
 export default app;

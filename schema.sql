@@ -86,6 +86,38 @@ CREATE TABLE IF NOT EXISTS chat_sessions (
     ended_at TEXT
 );
 
+-- Video recordings for biometric capture
+CREATE TABLE IF NOT EXISTS video_recordings (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    interview_id TEXT,
+    question_id TEXT,
+    r2_key TEXT NOT NULL,
+    duration_seconds REAL,
+    file_size INTEGER,
+    mime_type TEXT DEFAULT 'video/mp4',
+    camera_facing TEXT DEFAULT 'front',
+    biometric_status TEXT DEFAULT 'pending',
+    transcription TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Biometric capture data (face mesh, emotion, lip sync, mannerisms, body pose)
+CREATE TABLE IF NOT EXISTS biometric_captures (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    video_id TEXT NOT NULL,
+    capture_type TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    confidence REAL DEFAULT 0,
+    frame_start INTEGER,
+    frame_end INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (video_id) REFERENCES video_recordings(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
 CREATE INDEX IF NOT EXISTS idx_memories_category ON memories(user_id, category);
@@ -95,3 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_family_vault ON family_members(vault_user_id);
 CREATE INDEX IF NOT EXISTS idx_voice_user ON voice_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_user ON chat_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_video_user ON video_recordings(user_id);
+CREATE INDEX IF NOT EXISTS idx_video_interview ON video_recordings(interview_id);
+CREATE INDEX IF NOT EXISTS idx_biometric_video ON biometric_captures(video_id);
+CREATE INDEX IF NOT EXISTS idx_biometric_user ON biometric_captures(user_id);
